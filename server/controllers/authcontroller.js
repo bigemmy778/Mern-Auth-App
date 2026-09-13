@@ -136,7 +136,7 @@ export const login = async (req, res) => {
     try {
         const user = await userModel.findOne({ email });
         if (!user) {
-            return res.json({ success: false, messsage: 'Invalid email' })
+            return res.json({ success: false, message: 'Invalid email' })
         }
         //we want to check if user password is the same with the one in the mongoDb
         const isMatch = await bcrypt.compare(password, user.password)
@@ -200,8 +200,6 @@ export const logout = async (req, res) => {
         return res.json({ success: false, message: error.message });
     }
 }
-
-
 
 
 // Send Verification OTP to the user's email
@@ -355,8 +353,6 @@ export const verifyEmail = async (req, res) => {
         });
     }
 };
-
-
 
 
 //check if user is authenticated 
