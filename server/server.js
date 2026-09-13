@@ -22,10 +22,11 @@ app.use((req, res, next) => {
 });
 app.use(express.json())
 app.use(cookieParser())
-app.use(cors({ 
-    origin: 'http://localhost:5173',
+
+app.use(cors({
+    origin: 'https://mern-auth-frontend-xxxx.onrender.com',
     credentials: true
-}))
+}));
 
 //API Endpoints
 app.get('/', (req, res)=> res.send("API WORKING"))
