@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';  // Import bcryptjs. // We use bcrypt to securely hash the user's password before saving it.
-import transporter from '../config/nodemailer.js';// Import the user model.
+import sendEmail from '../config/sendEmail.js';
+//import transporter from '../config/nodemailer.js';// Import the user model.
 import userModel from '../models/userModel.js';// This model is used to communicate with the users collection in MongoDB.
 import jwt from 'jsonwebtoken'; // Import jsonwebtoken. // We use JWT to create an authentication token for the user.
 import { EMAIL_VERIFY_TEMPLATE, PASSWORD_RESET_TEMPLATE } from '../config/emailTemplates.js';
@@ -366,40 +367,69 @@ export const isAuthenticated = async (req, res) => {
 
 // Send Password Reset OTP
 export const sendResetOtp = async (req, res) => {
+
     const { email } = req.body;
+
     if (!email) {
-        return res.json({ success: false, message: 'email is required' })
+        return res.json({
+            success: false,
+            message: 'email is required'
+        });
     }
 
     try {
+
+        // Find the user by email.
         const user = await userModel.findOne({ email });
+
         if (!user) {
-            return res.json({ success: false, message: 'User not found' })
+            return res.json({
+                success: false,
+                message: 'User not found'
+            });
         }
 
-        const otp = String(Math.floor(100000 + Math.random() * 900000)) // creating the otp
+        // Generate a random 6-digit OTP.
+        const otp = String(
+            Math.floor(100000 + Math.random() * 900000)
+        );
 
+        // Save the OTP in MongoDB.
         user.resetOtp = otp;
-        user.resetOtpExpireAt = Date.now() + 15 * 60 * 1000 // otp stays for 24 hours
+
+        // OTP expires after 15 minutes.
+        user.resetOtpExpireAt =
+            Date.now() + 15 * 60 * 1000;
 
         await user.save();
 
-        const mailOption = {
-            from: process.env.SENDER_EMAIL,
+        // Send the email through Brevo's HTTPS API.
+        await sendEmail({
             to: user.email,
+
             subject: 'Password Reset OTP',
-            text: ` your OTP for resetting your password is ${otp}. Use this OTP to proceed with resetting your password`,
-            html: PASSWORD_RESET_TEMPLATE.replace("{{otp}}",otp).replace("{{email}}", user.email)
-        }
 
-        await transporter.sendMail(mailOption);
+            html: PASSWORD_RESET_TEMPLATE
+                .replace("{{otp}}", otp)
+                .replace("{{email}}", user.email)
+        });
 
-        return res.json({ success: true, message: 'OTP sent to your email' });
+        return res.json({
+            success: true,
+            message: 'OTP sent to your email'
+        });
 
     } catch (error) {
-        return res.json({ success: false, message: error.message })
+
+        console.log("SEND RESET OTP ERROR:", error);
+
+        return res.json({
+            success: false,
+            message: error.message
+        });
     }
-}
+};
+
 
 // Reset User Passowrd
 export const resetPassword = async (req, res) => {
@@ -440,3 +470,49 @@ export const resetPassword = async (req, res) => {
 
     }
 }
+
+
+
+
+
+
+// Send Password Reset OTP with SMPT BREVO
+
+// export const sendResetOtp = async (req, res) => {
+//     const { email } = req.body;
+//     if (!email) {
+//         return res.json({ success: false, message: 'email is required' })
+//     }
+
+//     try {
+//         const user = await userModel.findOne({ email });
+//         if (!user) {
+//             return res.json({ success: false, message: 'User not found' })
+//         }
+
+//         const otp = String(Math.floor(100000 + Math.random() * 900000)) // creating the otp
+
+//         user.resetOtp = otp;
+//         user.resetOtpExpireAt = Date.now() + 15 * 60 * 1000 // otp stays for 24 hours
+
+//         await user.save();
+
+//         const mailOption = {
+//             from: process.env.SENDER_EMAIL,
+//             to: user.email,
+//             subject: 'Password Reset OTP',
+//             text: ` your OTP for resetting your password is ${otp}. Use this OTP to proceed with resetting your password`,
+//             html: PASSWORD_RESET_TEMPLATE.replace("{{otp}}",otp).replace("{{email}}", user.email)
+//         }
+
+//         await transporter.sendMail(mailOption);
+
+//         return res.json({ success: true, message: 'OTP sent to your email' });
+
+//     } catch (error) {
+//         return res.json({ success: false, message: error.message })
+//     }
+// }
+
+//
+
