@@ -243,20 +243,22 @@ export const sendVerifyOtp = async (req, res) => {
         // Save the updated user information to MongoDB
         await user.save();
 
-        console.log("EMAIL TEMPLATE:",EMAIL_VERIFY_TEMPLATE)
+        console.log("EMAIL TEMPLATE:", EMAIL_VERIFY_TEMPLATE);
 
-        // Create the email that will be sent to the user
-        const mailOption = {
-            from: process.env.SENDER_EMAIL,
+        // Send the verification email using Brevo's HTTPS API.
+        // We use the API instead of Nodemailer SMTP because
+        // SMTP connections can be blocked on Render.
+        await sendEmail({
             to: user.email,
-            subject: 'Account Verification OTP',
-            // text: `Your OTP is ${otp}. Verify your account using this OTP`,
-            html: EMAIL_VERIFY_TEMPLATE.replace("{{otp}}", otp)
-            .replace("{{email}}", user.email)
-        };
 
-        // Send the OTP email using Nodemailer
-        await transporter.sendMail(mailOption);
+            subject: 'Account Verification OTP',
+
+            // Replace the placeholders in our email template
+            // with the actual OTP and user's email.
+            html: EMAIL_VERIFY_TEMPLATE
+                .replace("{{otp}}", otp)
+                .replace("{{email}}", user.email)
+        });
 
         // Tell the frontend that the email was sent successfully
         return res.json({
@@ -475,6 +477,80 @@ export const resetPassword = async (req, res) => {
 
 
 
+
+// Send Verification OTP to the user's email
+// export const sendVerifyOtp = async (req, res) => {
+//     try {
+
+//         // Get the logged-in user's ID from the authentication middleware
+//         const userId = req.userId;
+
+//         // Find the user in MongoDB using their ID
+//         const user = await userModel.findById(userId);
+
+//         // Make sure the user actually exists
+//         if (!user) {
+//             return res.json({
+//                 success: false,
+//                 message: "User not found"
+//             });
+//         }
+
+//         // Don't send another OTP if the account is already verified
+//         if (user.isAccountVerified) {
+//             return res.json({
+//                 success: false,
+//                 message: "Account Already Verified"
+//             });
+//         }
+
+//         // Generate a random 6-digit OTP
+//         const otp = String(
+//             Math.floor(100000 + Math.random() * 900000)
+//         );
+
+//         // Save the OTP in the user's MongoDB document
+//         user.verifyOtp = otp;
+
+//         // Make the OTP expire after 10 minutes
+//         user.verifyOtpExpireAt = Date.now() + 10 * 60 * 1000;
+
+//         // Save the updated user information to MongoDB
+//         await user.save();
+
+//         console.log("EMAIL TEMPLATE:",EMAIL_VERIFY_TEMPLATE)
+
+//         // Create the email that will be sent to the user
+//         const mailOption = {
+//             from: process.env.SENDER_EMAIL,
+//             to: user.email,
+//             subject: 'Account Verification OTP',
+//             // text: `Your OTP is ${otp}. Verify your account using this OTP`,
+//             html: EMAIL_VERIFY_TEMPLATE.replace("{{otp}}", otp)
+//             .replace("{{email}}", user.email)
+//         };
+
+//         // Send the OTP email using Nodemailer
+//         await transporter.sendMail(mailOption);
+
+//         // Tell the frontend that the email was sent successfully
+//         return res.json({
+//             success: true,
+//             message: 'Verification OTP Sent on Email'
+//         });
+
+//     } catch (error) {
+
+//         // Log the error if something goes wrong
+//         console.log("SEND OTP ERROR:", error);
+
+//         // Send the error message back to the frontend
+//         return res.json({
+//             success: false,
+//             message: error.message
+//         });
+//     }
+// };
 
 // Send Password Reset OTP with SMPT BREVO
 
