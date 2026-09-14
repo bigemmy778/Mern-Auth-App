@@ -100,15 +100,31 @@ export const register = async (req, res) => {
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
-        //Sending welcome email
-        const mailOptions = {
-            from: process.env.SENDER_EMAIL,
+        // Send the welcome email using Brevo's HTTPS API.
+        // We use the API instead of Nodemailer SMTP.
+        await sendEmail({
             to: email,
-            subject: "Welcome to FelzStack",
-            text: `Welcome to FelzStack website, your acount has been created with email id: ${email} let us know if this was a mistake`
-        }
 
-        await transporter.sendMail(mailOptions);
+            subject: "Welcome to FelzStack",
+
+            // HTML content of the welcome email.
+            html: `
+        <h2>Welcome to FelzStack!</h2>
+
+        <p>
+            Your account has been successfully created.
+        </p>
+
+        <p>
+            Your account email is:
+            <strong>${email}</strong>
+        </p>
+
+        <p>
+            If you did not create this account, please let us know.
+        </p>
+    `
+        });
 
 
 
@@ -442,30 +458,30 @@ export const resetPassword = async (req, res) => {
     }
 
     try {
-         
-        const user = await userModel.findOne({email});
-        if (!user){
-            return res.json({ success: false, message: 'User not found'});
+
+        const user = await userModel.findOne({ email });
+        if (!user) {
+            return res.json({ success: false, message: 'User not found' });
         }
         // if the otp feild is empty or not equall to otp
-        if (user.resetOtp === '' || user.resetOtp !== otp){
-             return res.json({ success: false, message: 'Invalid OTP'})
+        if (user.resetOtp === '' || user.resetOtp !== otp) {
+            return res.json({ success: false, message: 'Invalid OTP' })
         }
 
-           if (user.resetOtpExpire < Date.now()){
-             return res.json({ success: false, message: 'OTP Expired' });
-           }
+        if (user.resetOtpExpire < Date.now()) {
+            return res.json({ success: false, message: 'OTP Expired' });
+        }
 
-           const hashedPassword = await bcrypt.hash(newPassword, 10); // hash the new password
-           //update it in the mongoDB
-           user.password = hashedPassword
-           user.resetOtp = '';
-           user.resetOtpExpire = 0;
+        const hashedPassword = await bcrypt.hash(newPassword, 10); // hash the new password
+        //update it in the mongoDB
+        user.password = hashedPassword
+        user.resetOtp = '';
+        user.resetOtpExpire = 0;
 
-           await user.save();
+        await user.save();
 
-            return res.json({ success: true, message: 'Password has been reset successfully' });
-            
+        return res.json({ success: true, message: 'Password has been reset successfully' });
+
 
     } catch (error) {
         return res.json({ success: false, message: error.message });
