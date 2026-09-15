@@ -16,6 +16,12 @@ connectDB()
 const allowedOrigins = ['http://localhost:5173']  // avoiding potential cors issues
 
 
+// =============================== 
+           // REQUEST LOGGER 
+// =============================== 
+// This helps us see what requests are 
+// reaching the backend.
+
 app.use((req, res, next) => {
     console.log(`REQUEST: ${req.method} ${req.url}`);
     console.log("CONTENT-TYPE:", req.headers["content-type"]);
@@ -36,18 +42,53 @@ app.use((req, res, next) => {
 //     console.log('CONTENT-TYPE:', req.headers['content-type']);
 //     next();
 // });
-app.use(express.json())
-app.use(cookieParser())
 
+// MIDDLEWARE
+
+app.use(express.json())  // Allow Express to read JSON request bodies
+app.use(cookieParser())  // Allow Express to read cookies
+
+
+// =============================== 
+           // CORS
+ // ===============================
 app.use(cors({
     origin: 'https://mern-auth-frontend-k2wp.onrender.com',
     credentials: true
 }));
 
+
+// =============================== 
+// DISABLE AUTHENTICATION CACHING 
+// ===============================
+
+// Authentication responses should never be cached.
+// This prevents the browser from reusing an old
+// "Not Authorized" response after the user has logged in.
+app.use('/api/auth', (req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    next();
+});
+
+
+
+app.use('/api/user', (req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    next();
+});
+
+
+
 //API Endpoints
 app.get('/', (req, res)=> res.send("API WORKING"))
 app.use('/api/auth', authRouter)
 app.use('/api/user', userRouter)
-app.listen(port, ()=> console.log(`Server started on PORT:${port}`))
+app.listen(port, ()=> 
+console.log(`Server started on PORT:${port}`
+));
 
 
