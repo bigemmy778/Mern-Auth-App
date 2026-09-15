@@ -36,12 +36,36 @@ export const AppContextProvider = (props) => {
     //creating a function that will get the user data
     const getUserData = async () => {
         try {
-            const { data } = await axios.get(backendUrl + '/api/user/data')
-            data.success ? setUserData(data.userData) : toast.error(data.message)
+    
+            const { data } = await axios.get(
+                backendUrl + '/api/user/data'
+            );
+    
+            console.log("========== USER DATA ==========");
+            console.log("USER DATA RESPONSE:", data);
+            console.log("USER DATA:", data.userData);
+            console.log("================================");
+    
+            if (data.success) {
+    
+                setUserData(data.userData);
+    
+            } else {
+    
+                console.log("USER DATA ERROR:", data.message);
+    
+                toast.error(data.message);
+            }
+    
         } catch (error) {
-            toast.error(error.message)
+    
+            console.log("GET USER DATA ERROR:", error);
+    
+            toast.error(
+                error.response?.data?.message ||
+                error.message
+            );
         }
-
     }
 
     useEffect(() => {
