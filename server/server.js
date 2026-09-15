@@ -15,11 +15,27 @@ const port = process.env.PORT || 4000
 connectDB()
 const allowedOrigins = ['http://localhost:5173']  // avoiding potential cors issues
 
+
 app.use((req, res, next) => {
-    console.log('REQUEST:', req.method, req.url);
-    console.log('CONTENT-TYPE:', req.headers['content-type']);
+    console.log(`REQUEST: ${req.method} ${req.url}`);
+    console.log("CONTENT-TYPE:", req.headers["content-type"]);
+
+    // Show the response status after the request finishes
+    res.on("finish", () => {
+        console.log(
+            `RESPONSE: ${req.method} ${req.url} → ${res.statusCode}`
+        );
+    });
+
     next();
 });
+
+
+// 
+//     console.log('REQUEST:', req.method, req.url);
+//     console.log('CONTENT-TYPE:', req.headers['content-type']);
+//     next();
+// });
 app.use(express.json())
 app.use(cookieParser())
 
