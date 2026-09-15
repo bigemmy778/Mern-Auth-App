@@ -14,7 +14,15 @@ export const AppContextProvider = (props) => {
 
     const getAuthState = async () => {
         try {
-            const { data } = await axios.get(backendUrl + '/api/auth/is-auth') // api call to the backend
+           // api call to the backend
+           const { data } = await axios.get(
+            backendUrl + '/api/user/data',
+            {
+                headers: {
+                    'Cache-Control': 'no-cache'
+                }
+            }
+        )
             if (data.success) {
                 setIsLoggedin(true)
                 getUserData()
