@@ -32,7 +32,7 @@ const Login = () => {
 
                 if (data.success) {
                     setIsLoggedin(true)
-                    getUserData()  // from appContext
+                    await getUserData()  // from appContext
                     navigate('/')
                 } else {
                     toast.error(data.message)// display error message beautifuly
