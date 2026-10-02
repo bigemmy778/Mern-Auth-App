@@ -102,32 +102,41 @@ export const register = async (req, res) => {
 
         // Send the welcome email using Brevo's HTTPS API.
         // We use the API instead of Nodemailer SMTP.
-        await sendEmail({
-            to: email,
+        // The welcome email is a bonus, not a requirement for signup.
+        // We wrap it in its own try/catch so that if Brevo fails,
+        // the account still gets created and the user still gets logged in.
+        try {
+            await sendEmail({
+                to: email,
 
-            subject: "Welcome to FelzStack",
+                subject: "Welcome to FelzStack",
 
-            // HTML content of the welcome email.
-            html: `
-        <h2>Welcome to FelzStack!</h2>
+                // HTML content of the welcome email.
+                html: `
+                <h2>Welcome to FelzStack!</h2>
 
-        <p>
-            Your account has been successfully created.
-        </p>
+                <p>
+                    Your account has been successfully created.
+                </p>
 
-        <p>
-            Your account email is:
-            <strong>${email}</strong>
-        </p>
+                <p>
+                    Your account email is:
+                    <strong>${email}</strong>
+                </p>
 
-        <p>
-            If you did not create this account, please let us know.
-        </p>
-    `
-        });
+                <p>
+                    If you did not create this account, please let us know.
+                </p>
+`
+            });
+        } catch (emailError) {
 
+            // Don't stop the signup. Just record the problem in the Render logs
+            // so you can see it and fix it later.
+            console.error("WELCOME EMAIL ERROR:", emailError.message);
+        }
 
-
+        // This line now runs even if the email failed.
         return res.json({ success: true, token }) //generate response
 
 
@@ -259,8 +268,6 @@ export const sendVerifyOtp = async (req, res) => {
         // Save the updated user information to MongoDB
         await user.save();
 
-        console.log("EMAIL TEMPLATE:", EMAIL_VERIFY_TEMPLATE);
-
         // Send the verification email using Brevo's HTTPS API.
         // We use the API instead of Nodemailer SMTP because
         // SMTP connections can be blocked on Render.
@@ -298,15 +305,12 @@ export const sendVerifyOtp = async (req, res) => {
 
 // verify email using OTP
 export const verifyEmail = async (req, res) => {
-    console.log("REQ BODY:", req.body);
-    console.log("REQ USER ID:", req.userId);
-    console.log("COOKIES:", req.cookies);
 
     // Get the OTP from the frontend.
     const { otp } = req.body;
 
     // Get the user's ID from the authentication middleware.
-    // userAuth gets the ID from the JWT cookie and puts it in req.userId.
+    // userAuth gets the ID from the JWT (Authorization header or cookie) and puts it in req.userId.
     const userId = req.userId;
 
     // Make sure we have both the user ID and OTP.
@@ -468,7 +472,7 @@ export const resetPassword = async (req, res) => {
             return res.json({ success: false, message: 'Invalid OTP' })
         }
 
-        if (user.resetOtpExpire < Date.now()) {
+        if (user.resetOtpExpireAt < Date.now()) {
             return res.json({ success: false, message: 'OTP Expired' });
         }
 
@@ -476,8 +480,9 @@ export const resetPassword = async (req, res) => {
         //update it in the mongoDB
         user.password = hashedPassword
         user.resetOtp = '';
-        user.resetOtpExpire = 0;
 
+        // FIXED: clear the correct field name here too.
+        user.resetOtpExpireAt = 0;
         await user.save();
 
         return res.json({ success: true, message: 'Password has been reset successfully' });
@@ -494,117 +499,4 @@ export const resetPassword = async (req, res) => {
 
 
 
-// Send Verification OTP to the user's email
-// export const sendVerifyOtp = async (req, res) => {
-//     try {
-
-//         // Get the logged-in user's ID from the authentication middleware
-//         const userId = req.userId;
-
-//         // Find the user in MongoDB using their ID
-//         const user = await userModel.findById(userId);
-
-//         // Make sure the user actually exists
-//         if (!user) {
-//             return res.json({
-//                 success: false,
-//                 message: "User not found"
-//             });
-//         }
-
-//         // Don't send another OTP if the account is already verified
-//         if (user.isAccountVerified) {
-//             return res.json({
-//                 success: false,
-//                 message: "Account Already Verified"
-//             });
-//         }
-
-//         // Generate a random 6-digit OTP
-//         const otp = String(
-//             Math.floor(100000 + Math.random() * 900000)
-//         );
-
-//         // Save the OTP in the user's MongoDB document
-//         user.verifyOtp = otp;
-
-//         // Make the OTP expire after 10 minutes
-//         user.verifyOtpExpireAt = Date.now() + 10 * 60 * 1000;
-
-//         // Save the updated user information to MongoDB
-//         await user.save();
-
-//         console.log("EMAIL TEMPLATE:",EMAIL_VERIFY_TEMPLATE)
-
-//         // Create the email that will be sent to the user
-//         const mailOption = {
-//             from: process.env.SENDER_EMAIL,
-//             to: user.email,
-//             subject: 'Account Verification OTP',
-//             // text: `Your OTP is ${otp}. Verify your account using this OTP`,
-//             html: EMAIL_VERIFY_TEMPLATE.replace("{{otp}}", otp)
-//             .replace("{{email}}", user.email)
-//         };
-
-//         // Send the OTP email using Nodemailer
-//         await transporter.sendMail(mailOption);
-
-//         // Tell the frontend that the email was sent successfully
-//         return res.json({
-//             success: true,
-//             message: 'Verification OTP Sent on Email'
-//         });
-
-//     } catch (error) {
-
-//         // Log the error if something goes wrong
-//         console.log("SEND OTP ERROR:", error);
-
-//         // Send the error message back to the frontend
-//         return res.json({
-//             success: false,
-//             message: error.message
-//         });
-//     }
-// };
-
-// Send Password Reset OTP with SMPT BREVO
-
-// export const sendResetOtp = async (req, res) => {
-//     const { email } = req.body;
-//     if (!email) {
-//         return res.json({ success: false, message: 'email is required' })
-//     }
-
-//     try {
-//         const user = await userModel.findOne({ email });
-//         if (!user) {
-//             return res.json({ success: false, message: 'User not found' })
-//         }
-
-//         const otp = String(Math.floor(100000 + Math.random() * 900000)) // creating the otp
-
-//         user.resetOtp = otp;
-//         user.resetOtpExpireAt = Date.now() + 15 * 60 * 1000 // otp stays for 24 hours
-
-//         await user.save();
-
-//         const mailOption = {
-//             from: process.env.SENDER_EMAIL,
-//             to: user.email,
-//             subject: 'Password Reset OTP',
-//             text: ` your OTP for resetting your password is ${otp}. Use this OTP to proceed with resetting your password`,
-//             html: PASSWORD_RESET_TEMPLATE.replace("{{otp}}",otp).replace("{{email}}", user.email)
-//         }
-
-//         await transporter.sendMail(mailOption);
-
-//         return res.json({ success: true, message: 'OTP sent to your email' });
-
-//     } catch (error) {
-//         return res.json({ success: false, message: error.message })
-//     }
-// }
-
-//
 

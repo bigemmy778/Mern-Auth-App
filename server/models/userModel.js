@@ -1,4 +1,3 @@
-// import { verify } from "jsonwebtoken";
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
@@ -23,7 +22,7 @@ const userSchema = new mongoose.Schema({
     },
     verifyOtpExpireAt: {
         type: Number,
-        default: '',
+        default: 0,
     },
     isAccountVerified: {
         type: Boolean,
@@ -33,7 +32,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: '',
     },
-    resetOtpExpiredAt: {
+    resetOtpExpireAt: {
         type: Number,
         default: 0 
     }
