@@ -1,8 +1,24 @@
 import { createContext, useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { data } from "react-router-dom";
 export const AppContent = createContext()
+
+
+// An interceptor runs automatically before EVERY request leaves the frontend.
+axios.interceptors.request.use((config) => {
+
+    // Read the saved token from the browser's storage.
+    const token = localStorage.getItem('token');
+
+    // If there is a token, attach it to the request as a Bearer header.
+    // Our backend middleware (userAuth) looks for exactly this header.
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    // Send the request on its way.
+    return config;
+});
 
 export const AppContextProvider = (props) => {
     

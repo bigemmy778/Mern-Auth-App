@@ -31,6 +31,8 @@ const Login = () => {
                 const { data } = await axios.post(backendUrl + '/api/auth/register', { name, email, password })
 
                 if (data.success) {
+                    // NEW: save the token FIRST, before any other request is made.
+                    localStorage.setItem('token', data.token);
                     setIsLoggedin(true)
                     await getUserData()  // from appContext
                     navigate('/')
@@ -44,8 +46,10 @@ const Login = () => {
                 const { data } = await axios.post(backendUrl + '/api/auth/login', { email, password })
 
                 if (data.success) {
+                    // NEW: save the token FIRST here too.
+                    localStorage.setItem('token', data.token);
                     setIsLoggedin(true)
-                    getUserData( ) //AppContext 
+                    getUserData() //AppContext 
                     navigate('/')
                 } else {
                     toast.error(data.message)// display error message beautifuly
